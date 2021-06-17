@@ -19,6 +19,7 @@ import android.os.Looper;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.TextView;
 
 import com.google.android.gms.cast.ApplicationMetadata;
@@ -231,6 +232,8 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         textView = findViewById(R.id.textView);
+
+        findViewById(R.id.buttonPause).setOnClickListener(view -> mRemoteMediaPlayer.pause(mApiClient));
 
         // Get the media router service.
         mediaRouter = MediaRouter.getInstance(this);
