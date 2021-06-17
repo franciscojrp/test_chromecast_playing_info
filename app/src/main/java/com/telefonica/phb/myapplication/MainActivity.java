@@ -14,9 +14,13 @@ import androidx.mediarouter.media.RemotePlaybackClient;
 
 import android.content.Context;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.TextView;
 
 import com.google.android.gms.cast.ApplicationMetadata;
 import com.google.android.gms.cast.Cast;
@@ -36,6 +40,8 @@ import java.io.IOException;
 public class MainActivity extends AppCompatActivity {
 
     private final Context context = this;
+
+    private TextView textView;
 
     private MediaRouter mediaRouter;
     private MediaRouteSelector mSelector;
@@ -79,26 +85,6 @@ public class MainActivity extends AppCompatActivity {
                                     @Override
                                     public void onResult(@NonNull Cast.ApplicationConnectionResult applicationConnectionResult) {
                                         Log.i("MediaRouter", "Cast.CastApi.joinApplication.onResult() " + applicationConnectionResult.getSessionId());
-
-                                        // Attach a new playback client
-                                        remotePlaybackClient = new RemotePlaybackClient(context, mRoute);
-                                        remotePlaybackClient.setStatusCallback(new RemotePlaybackClient.StatusCallback() {
-                                            @Override
-                                            public void onItemStatusChanged(Bundle data, String sessionId, MediaSessionStatus sessionStatus, String itemId, MediaItemStatus itemStatus) {
-                                                super.onItemStatusChanged(data, sessionId, sessionStatus, itemId, itemStatus);
-                                            }
-
-                                            @Override
-                                            public void onSessionStatusChanged(Bundle data, String sessionId, MediaSessionStatus sessionStatus) {
-                                                super.onSessionStatusChanged(data, sessionId, sessionStatus);
-                                            }
-
-                                            @Override
-                                            public void onSessionChanged(String sessionId) {
-                                                super.onSessionChanged(sessionId);
-                                            }
-                                        });
-                                        //remotePlaybackClient.getSessionStatus(null, null);
                                         
                                         mRemoteMediaPlayer = new RemoteMediaPlayer();
                                         mRemoteMediaPlayer.setOnStatusUpdatedListener( new RemoteMediaPlayer.OnStatusUpdatedListener() {
@@ -110,7 +96,19 @@ public class MainActivity extends AppCompatActivity {
                                                 Log.i("MediaRouter", "Remote media player content video title " + mediaInfo.getMetadata().getString(MediaMetadata.KEY_TITLE));
                                                 Log.i("MediaRouter", "Remote media player content media duration in seconds " + mediaInfo.getStreamDuration() / 1000);
                                                 Log.i("MediaRouter", "Remote media player content media position (second) " + mediaStatus.getStreamPosition() / 1000);
-                                                // TODO: you can call isChromecastPlaying() now
+
+                                                textView.setText("Playing " + mediaInfo.getMetadata().getString(MediaMetadata.KEY_TITLE)
+                                                        + " (" + mediaStatus.getStreamPosition() / 1000
+                                                        + " of " + mediaInfo.getStreamDuration() / 1000
+                                                        + " secs)");
+
+                                                //Just to test that we can keep asking for the status every second
+                                                new Handler(Looper.myLooper()).postDelayed(new Runnable() {
+                                                    @Override
+                                                    public void run() {
+                                                        mRemoteMediaPlayer.requestStatus(mApiClient);
+                                                    }
+                                                }, 1000);
                                             }
                                         });
 
@@ -232,6 +230,10 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        textView = findViewById(R.id.textView);
+
+        findViewById(R.id.buttonPause).setOnClickListener(view -> mRemoteMediaPlayer.pause(mApiClient));
 
         // Get the media router service.
         mediaRouter = MediaRouter.getInstance(this);
